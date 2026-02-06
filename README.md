@@ -114,6 +114,7 @@ Example `~/.config/signal-cli-to-file/config.json`:
 ```
 
 #### Configuration values
+
 **signalNumber**\
 The number of your bot to receive messages for (needs to be setup in signal-cli already.)\
 Example: `"+4917222222222"`
@@ -156,6 +157,23 @@ Default: `true`
 Whether to keep attachments on the server after download. `false`=delete, `true`=keep\
 Values: `false`/`true`\
 Default: `false`
+
+## Usage
+
+Process all messages:
+```sh
+signal-api-to-inbox
+```
+
+This works as a cronjob.
+With fcron I can just refer to the binary:
+```crontab
+* */2 * * * ~/code/signal-cli-to-file/signal-api-to-inbox
+```
+If this does not find your config, try with `$HOME`:
+```crontab
+* */2 * * * HOME=/home/jneidel ~/code/signal-cli-to-file/signal-api-to-inbox
+```
 
 ## Tested scenarios
 ### signal-api-to-inbox
