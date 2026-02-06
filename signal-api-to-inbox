@@ -57,14 +57,20 @@ const backupDataDir = path.join(process.env.XDG_CACHE_HOME ? process.env.XDG_CAC
 if (backupMessages) fs.mkdir( backupDataDir, { recursive: true } );
 
 function logError(msg) {
-  return fs.appendFile(errorFile, String(msg)+"\n\n");
+    return fs.appendFile(errorFile, String(msg)+"\n\n");
 }
 
-function writeToFile(filename, data) {
-  if (debugging) console.log("Writing to: " + filename);
-  return fs.appendFile(path.join(inboxDir, filename), data)
-    .catch(err => logError( `Writing file: ${filename}
-With message: ${data}
+async function fileExistsp(filename) {
+    return fs.stat(path.join(inboxDir, filename))
+        .then(stat => stat.isFile())
+        .catch(() => false);
+}
+
+async function writeToFile(filename, data) {
+    if (debugging) console.log("Writing to: " + filename);
+    return fs.appendFile(path.join(inboxDir, filename), data)
+        .catch(err => logError( `Writing file: ${filename}
+        With message: ${data}
 ` + err ));
 }
 
@@ -74,23 +80,61 @@ function fetchApi(endpoint, options = {}) {
 ` + err))
 }
 
-function writeNote(msg) {
-  let filename = msg.replaceAll("/", "");
-  const firstLineOfFilename = filename.split("\n")[0];
-  if (firstLineOfFilename.match(/:/) && ! filename.match(/^http/)) {
-    filename = firstLineOfFilename.match(/(.*):/)[1].slice(0, filenameFromTitleCutoff);
-  } else {
-    filename = filename.replaceAll("\n", " ").trim();
-    if (filename.length > filenameFromBodyCutoff)
-      filename = filename.slice(0, filenameFromBodyCutoff) + "…";
-  }
+function determineUserChosenTitle(msg) {
+    const firstLineOfFilename = msg.split("\n")[0];
 
-  if (msg.match(/^http/))
-    msg = `{${msg}}`;
+    const hasUserChosenTitle = firstLineOfFilename.match(/:/) && ! msg.match(/^http/);
+    if (hasUserChosenTitle) {
+        return firstLineOfFilename.match(/(.*):/)[1]
+            .slice(0, filenameFromTitleCutoff);
+    } else {
+        return "";
 
-  msg = `${msg}\n`;
+    }
+}
+function determineFilename(msgNonPathSafe) {
+    const msg = msgNonPathSafe.replaceAll("/", "");
 
-  return writeToFile( `${filename}.${messageFileExtension}`, msg );
+    const title = determineUserChosenTitle(msg);
+    if (title) {
+        return `${title}.${messageFileExtension}`;
+    } else {
+        const msgContentsOneline = msg.replaceAll("\n", " ").trim();
+        if (msgContentsOneline.length <= filenameFromBodyCutoff)
+            return `${msgContentsOneline}.${messageFileExtension}`;
+        else {
+            const cutoffMsgContents = msg.slice(0, filenameFromBodyCutoff) + "…";
+            return `${cutoffMsgContents}.${messageFileExtension}`;
+        }
+    }
+}
+
+function formatOrgModeMessageBody(msg) {
+    let body = msg;
+    const title = determineUserChosenTitle(msg);
+
+    if (title)
+        body = msg.slice(msg.indexOf(':') + 1).trim();
+    if (msg.match(/^http/))
+        return `[[${body}]]`;
+
+    const head = `#+title: ${title}\n` +
+        `#+date: [${new Date().toISOString().slice(0, 10)}]\n\n`
+
+    return head + body;
+}
+
+async function writeNote(msg) {
+    const filename = determineFilename(msg);
+    const fileExists = await fileExistsp(filename);
+
+    if (fileExists && determineUserChosenTitle(msg))
+        msg = msg.slice(msg.indexOf(':') + 1);
+
+    if (!fileExists && messageFileExtension === "org")
+        msg = formatOrgModeMessageBody(msg);
+
+    return writeToFile( filename, `${msg}\n` );
 }
 
 function returnFileExtForContentType(ct) {
