@@ -39,16 +39,16 @@ const filenameFromBodyCutoff = 60;
 const filenameFromTitleCutoff = 80;
 
 if (!signalNumber || !inboxDir || !apiHost) {
-  console.error("The required configuration variables are not set.")
-  process.exit(1);
+    console.error("The required configuration variables are not set.")
+    process.exit(1);
 }
 fs.stat(inboxDir).catch(() => {
-  console.error( `Configured inboxDir '${inboxDir}' does not exist` )
-  process.exit(2);
+    console.error( `Configured inboxDir '${inboxDir}' does not exist` )
+    process.exit(2);
 })
 fetch(`${apiHost}/v1/health`).catch(() => {
-  console.error( `Configured apiHost '${apiHost}' is not reachable` )
-  process.exit(3);
+    console.error( `Configured apiHost '${apiHost}' is not reachable` )
+    process.exit(3);
 })
 
 const unixTime = Math.floor(Date.now()/1000);
@@ -74,9 +74,9 @@ async function writeToFile(filename, data) {
 ` + err ));
 }
 
-function fetchApi(endpoint, options = {}) {
-  return fetch( `${apiHost}${endpoint}`, options )
-    .catch(err => logError( `fetching ${endpoint}
+async function fetchApi(endpoint, options = {}) {
+    return fetch( `${apiHost}${endpoint}`, options )
+        .catch(err => logError( `fetching ${endpoint}
 ` + err))
 }
 
@@ -138,104 +138,104 @@ async function writeNote(msg) {
 }
 
 function returnFileExtForContentType(ct) {
-  switch(ct) {
+    switch(ct) {
     case "audio/mpeg":
-      return ".aac";
+        return ".aac";
     case "application/octet-stream":
-      return ".bin";
+        return ".bin";
     default:
-      logError( `FileExt is empty and contentType of ${contentType} is not being matched for attachement ${id}` );
-      return ".bin";
-  }
+        logError( `FileExt is empty and contentType of ${contentType} is not being matched for attachement ${id}` );
+        return ".bin";
+    }
 }
 
 function isAttachmentALongMessage(name) {
-  // If a message is really long signal will truncate the message and attach the whole thing as an attachment
-  return String(name).match(/^long-message-.*\.txt/);
+    // If a message is really long, Signal will truncate the message and attach it as a txt file attachment
+    return String(name).match(/^long-message-.*\.txt/);
 }
 
 function deleteAttachment(id) {
-  if (!keepAllAttachments) {
-    if (debugging) console.log( "Deleting remote attachement: ", id );
-    return fetchApi( `/v1/attachments/${id}`, { method: "DELETE" } );
-  }
+    if (!keepAllAttachments) {
+        if (debugging) console.log( "Deleting remote attachement: ", id );
+        return fetchApi( `/v1/attachments/${id}`, { method: "DELETE" } );
+    }
 }
 
 async function writeAttachment({id, contentType, name}, title, n) {
-  // id is a random string given by signal
-  // name is the filename of the file on the uploaders device
-  // title are the contents of an accompanying message, which functions as a title for the file
+    // id is a random string given by signal
+    // name is the filename of the file on the uploaders device
+    // title are the contents of an accompanying message, which functions as a title for the file
 
-  let filename = name ? name : id;
-  let fileExt = filename.match(/\..*$/);
+    let filename = name ? name : id;
+    let fileExt = filename.match(/\..*$/);
 
-  if (!fileExt) {
-    fileExt = returnFileExtForContentType(contentType);
-    filename = `${filename.slice(0, filenameFromBodyCutoff)}${fileExt}`;
-  } else {
-    fileExt = fileExt[0];
-  }
+    if (!fileExt) {
+        fileExt = returnFileExtForContentType(contentType);
+        filename = `${filename.slice(0, filenameFromBodyCutoff)}${fileExt}`;
+    } else {
+        fileExt = fileExt[0];
+    }
 
-  if (title) {
-    if (n) fileExt = `-${n}${fileExt}`;
-    filename = `${title.replaceAll("\n", " ").slice(0, filenameFromBodyCutoff).trim()}${fileExt}`;
-  }
+    if (title) {
+        if (n) fileExt = `-${n}${fileExt}`;
+        filename = `${title.replaceAll("\n", " ").slice(0, filenameFromBodyCutoff).trim()}${fileExt}`;
+    }
 
-  const attachmentData = await fetchApi( `/v1/attachments/${id}` )
-    .then( r => r.arrayBuffer() )
-    .then( r => Buffer.from(r) )
-    .catch( () => null );
-  if (!attachmentData) return;
+    const attachmentData = await fetchApi( `/v1/attachments/${id}` )
+        .then( r => r.arrayBuffer() )
+        .then( r => Buffer.from(r) )
+        .catch( () => null );
+    if (!attachmentData) return;
 
-  let writeFunc = () => writeToFile(filename, attachmentData);
+    let writeFunc = () => writeToFile(filename, attachmentData);
 
-  if (isAttachmentALongMessage(name))
-    writeFunc = () => writeNote(String(attachmentData));
+    if (isAttachmentALongMessage(name))
+        writeFunc = () => writeNote(String(attachmentData));
 
-  return writeFunc()
-    .then( () => deleteAttachment(id) );
+    return writeFunc()
+        .then( () => deleteAttachment(id) );
 }
 
-function getGroupIdOrSenderNumber(envelope) {
-  return envelope?.dataMessage?.groupInfo?.groupId || envelope?.sourceNumber || null;
+function getGroupOrSenderIdentifier(envelope) {
+    return envelope?.dataMessage?.groupInfo?.groupId || envelope?.sourceNumber || envelope?.sourceUuid || null;
 }
 
 fetchApi( `/v1/receive/${signalNumber}?ignore_stories=true&send_read_receipts=true` )
-  .then( r => r.json() )
-  .then( messages => {
-    if (debugging) console.log( "Results from /receive:\n" + JSON.stringify(messages, null, 2) )
+    .then( r => r.json() )
+    .then( messages => {
+        if (debugging) console.log( "Results from /receive:\n" + JSON.stringify(messages, null, 2) )
 
-    if ( messages?.error )
-      logError(`Error on /receive:
+        if ( messages?.error )
+            logError(`Error on /receive:
 ${messages.error}`).then(() => process.exit(1))
 
-    if (Array.isArray(messages)) {
-      if (backupMessages && messages) fs.writeFile( path.join(backupDataDir, `messages-${unixTime}`), JSON.stringify(messages, null, 2) )
-      messages.map( m => {
-        const message = m.envelope.dataMessage?.message;
-        const attachArr = m.envelope.dataMessage?.attachments;
-        let attachments = (attachArr ? attachArr : []).map( ({id, contentType, filename}) => ({id, contentType, name: filename}) );
-        const sender = getGroupIdOrSenderNumber(m.envelope);
+        if (Array.isArray(messages)) {
+            if (backupMessages && messages) fs.writeFile( path.join(backupDataDir, `messages-${unixTime}`), JSON.stringify(messages, null, 2) )
+            messages.map( m => {
+                const message = m.envelope.dataMessage?.message;
+                const attachArr = m.envelope.dataMessage?.attachments;
+                let attachments = (attachArr ? attachArr : []).map( ({id, contentType, filename}) => ({id, contentType, name: filename}) );
+                const sender = getGroupOrSenderIdentifier(m.envelope);
 
-        if (senderAndGroupWhitelist && !senderAndGroupWhitelist.includes(sender)) {
-          if (debugging) console.log( "Ignoring message from sender or group that is not whitelisted: ", sender );
-          if (attachments) attachments.forEach(a => deleteAttachment(a.id))
-          return
-        }
+                if (senderAndGroupWhitelist && !senderAndGroupWhitelist.includes(sender)) {
+                    if (debugging) console.log( "Ignoring message from sender or group that is not whitelisted: ", sender );
+                    if (attachments) attachments.forEach(a => deleteAttachment(a.id))
+                    return
+                }
 
-        if (!message && !attachments.length && debugging ) {
-          logError( `Message and attachements are empty for:
+                if (!message && !attachments.length && debugging ) {
+                    logError( `Message and attachements are empty for:
 ${JSON.stringify(m, null, 2)}` )
-          return
-        }
+                    return
+                }
 
-        return { message, attachments };
-      } ).forEach( m => {
-          if (m?.attachments.length) {
-            m.attachments.forEach((data, index) => writeAttachment(data, m.message, index))
-          } else if (m?.message) {
-            writeNote(m.message);
-          }
-        } )
-    }
-  })
+                return { message, attachments };
+            } ).forEach( m => {
+                if (m?.attachments.length) {
+                    m.attachments.forEach((data, index) => writeAttachment(data, m.message, index))
+                } else if (m?.message) {
+                    writeNote(m.message);
+                }
+            } )
+        }
+    })
