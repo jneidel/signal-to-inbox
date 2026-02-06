@@ -74,5 +74,28 @@ fetchApi(`/v1/receive/${signalNumber}?ignore_stories=true&send_read_receipts=tru
             logError(`Error on /receive:
 ${messages.error}`).then(() => process.exit(1))
 
-        processMessages(messages);
+        return processMessages(messages);
+    })
+    .then( summary => {
+        if (!summary) return;
+        const { createdFiles, appendedFiles, parsedCount, ignoredCount } = summary;
+
+        if (debugging) {
+            console.log(`Messages parsed : ${parsedCount}`);
+            console.log(`Messages ignored: ${ignoredCount}`);
+        }
+
+        if (createdFiles.length) {
+            console.log("New files created:");
+            createdFiles.forEach(filename => console.log(`- ${filename}`));
+        }
+        if (appendedFiles.length) {
+            if (createdFiles.length) console.log("");
+            console.log("Existing files appended to:");
+            appendedFiles.forEach(filename => console.log(`- ${filename}`));
+        }
+
+        if (!createdFiles.length && !appendedFiles.length) {
+            console.log("No files were written.");
+        }
     })

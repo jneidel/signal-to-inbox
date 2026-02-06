@@ -129,4 +129,24 @@ describe("integration", () => {
         const contents = await fs.readFile(path.join(inboxDir, filename));
         expect(contents.equals(attachmentBuffer)).toBe(true);
     });
+
+    test("summary data for created and appended files", async () => {
+        const filename = "Website yaks.md";
+
+        global.fetch = createFetchMock("title-body");
+        const firstSummary = await processMessages();
+
+        expect(firstSummary.parsedCount).toBe(2);
+        expect(firstSummary.ignoredCount).toBe(0);
+        expect(firstSummary.createdFiles).toEqual([filename]);
+        expect(firstSummary.appendedFiles).toEqual([]);
+
+        global.fetch = createFetchMock("title-body");
+        const secondSummary = await processMessages();
+
+        expect(secondSummary.parsedCount).toBe(2);
+        expect(secondSummary.ignoredCount).toBe(0);
+        expect(secondSummary.createdFiles).toEqual([]);
+        expect(secondSummary.appendedFiles).toEqual([filename]);
+    });
 });

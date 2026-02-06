@@ -17,6 +17,13 @@ function createProcessor({
     const backupDataDir = path.join(process.env.XDG_CACHE_HOME ? process.env.XDG_CACHE_HOME : path.join( process.env.HOME, ".cache"), "signal-api-backups" );
     if (backupMessages) fs.mkdir( backupDataDir, { recursive: true } );
 
+    let summary = {
+        parsedCount: 0,
+        ignoredCount: 0,
+        createdFiles: new Set(),
+        appendedFiles: new Set(),
+    }
+
     function logError(msg) {
         return fs.appendFile(errorFile, String(msg)+"\n\n");
     }
@@ -95,6 +102,11 @@ function createProcessor({
         if (!fileExists && messageFileExtension === "org")
             msg = formatOrgModeMessageBody(msg);
 
+        if (fileExists)
+            summary.appendedFiles.add(filename);
+        else
+            summary.createdFiles.add(filename);
+
         return writeToFile( filename, `${msg}\n` );
     }
 
@@ -148,7 +160,11 @@ function createProcessor({
             .catch( () => null );
         if (!attachmentData) return;
 
-        let writeFunc = () => writeToFile(filename, attachmentData);
+        let writeFunc = () => {
+            summary.createdFiles.add(filename);
+
+            return writeToFile(filename, attachmentData);
+        };
 
         if (isAttachmentALongMessage(name))
             writeFunc = () => writeNote(String(attachmentData));
@@ -161,10 +177,11 @@ function createProcessor({
         return envelope?.dataMessage?.groupInfo?.groupId || envelope?.sourceNumber || envelope?.sourceUuid || null;
     }
 
-    function processMessages(messages) {
+    async function processMessages(messages) {
         if (Array.isArray(messages)) {
+            summary.parsedCount = messages.length;
             if (backupMessages && messages) fs.writeFile( path.join(backupDataDir, `messages-${unixTime}`), JSON.stringify(messages, null, 2) )
-            messages.map( m => {
+            const tasks = messages.map( m => {
                 const message = m.envelope.dataMessage?.message;
                 const attachArr = m.envelope.dataMessage?.attachments;
                 let attachments = (attachArr ? attachArr : []).map( ({id, contentType, filename}) => ({id, contentType, name: filename}) );
@@ -172,26 +189,34 @@ function createProcessor({
 
                 if (senderAndGroupWhitelist && Array.isArray(senderAndGroupWhitelist) && senderAndGroupWhitelist.length > 0 && !senderAndGroupWhitelist.includes(sender)) {
                     if (debugging) console.log( "Ignoring message from sender or group that is not whitelisted: ", sender );
+                    summary.ignoredCount += 1;
                     if (attachments) attachments.forEach(a => deleteAttachment(a.id))
-                    return
+                    return null;
                 }
 
                 if (!message && !attachments.length && debugging ) {
                     logError( `Message and attachements are empty for:
 ${JSON.stringify(m, null, 2)}` )
-                    return
+                    return null;
                 }
 
                 return { message, attachments };
-            } ).forEach( m => {
+            } ).flatMap( m => {
+                if (!m) return [];
                 if (m?.attachments.length) {
-                    m.attachments.forEach((data, index) => writeAttachment(data, m.message, index))
+                    return m.attachments.map((data, index) => writeAttachment(data, m.message, index));
                 } else if (m?.message) {
-                    writeNote(m.message);
+                    return [ writeNote(m.message) ];
                 }
-            } )
+                return [];
+            } );
+            await Promise.all(tasks);
         }
-    }
+
+        summary.createdFiles = Array.from(summary.createdFiles).sort();
+        summary.appendedFiles = Array.from(summary.appendedFiles).sort();
+        return summary;
+        }
 
     return {
         logError,
