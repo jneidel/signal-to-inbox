@@ -1,102 +1,130 @@
-# signal-cli-to-file
+# signal-to-inbox
 
-> Save incoming signal messages as files (for your note-taking system)
+> Save signal messages as files (for your note-taking system)
 
-This script will parse all incoming messages (and attachments) and create files
-out of them in a specified location.
+Capture ideas on the go and process them on your computer when you're ready.
+All without leaving your favorite messenger.
+Ideal for your file-based note-taking system.
 
-My use case is to write notes on my phone, take pictures or record audios that
-then just show up in my note-taking system. All very conveniently through
-signal.
+Create a dedicated [Signal](https://signal.org) chat and have all messages send to it be created as text files on your computer.
+Images, PDF, audio and other attachments are also supported.
 
 ![Demo](demo.png)
 
-## What is the difference between the two scripts?
+## Usage
 
-There are two ways to interact with signal-cli programmatically:
-
-- [signal-cli](https://github.com/AsamK/signal-cli) - full functionality, invoke when needed, structured text output
-- [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) - lacks some features, always running, JSON interface
-
-The repo provides scripts for parsing either of them.
-
-- [script for signal-cli-rest-api](signal-api-to-inbox) - actively maintained
-- [script for signal-cli](signal-cli-to-inbox) - provided as is, feel free to submit a fix
-
-## About the scripts
-
-They were created for my specific use case, so you might not like some of the
-opinions.
-
-### Principles & Quirks
-
-- One message = one file
-- Everything is written to one single "inbox" directory
-- Errors are also written into that same directory (you can quickly see if something went wrong)
-- In case of naming collision: append instead of overwrite
-- Filenames past 60 characters are shortened
-- A colon (`:`) in the first line of the message is meant to specify the file name
-- If there an attachment comes with a message the message will be used for the file name
-- Edits are discarded
-- Single script file, no dependencies
-
-While the scripts generally work, bugs or some misbehaviors are to be expected.
-
-### Intended usage
-
-The script is intended to be run via cron (there is no output and errors written to files.)
-But nothing stands in the way always triggering them manually.
-
-## Setup
-
-The script themselves require the phone number you want to use to be setup in
-the chosen provider.
-
-And for you to configure some basic options in the script.
-
-### Setting up your number in signal-cli
-
-Follow the instruction in the respective project:
-- [signal-cli](https://github.com/AsamK/signal-cli?tab=readme-ov-file#usage)
-- [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api?tab=readme-ov-file#getting-started)
-
-My quick notes for registering with a landline number (not meant to replace the
-above instructions):
-
+You will have a dedicated chat where you send your notes, images, etc.
+Once everything is [setup](#setup-signal) and [configured](#configuration), you can process all waiting Signal messages into files with a single command:
 ```sh
-# generate captcha: https://signalcaptchas.org/registration/generate
-############### signal-cli setup
-signal-cli -a $SIGNAL_NUMBER register --captcha CAPTCHA
-sleep 60s
-signal-cli -a $SIGNAL_NUMBER register --voice --captcha CAPTCHA
-signal-cli -a $SIGNAL_NUMBER verify CODE
-signal-cli -a $SIGNAL_NUMBER updateProfile  --given-name "My" --family-name "Bot" --about "Beep Boop, I'm automated" --avatar inbox.png
-
-############### signal-api setup
-# api ref: https://bbernhard.github.io/signal-cli-rest-api
-curlj POST $API_HOST/v1/register/$SIGNAL_NUMBER '{use_voice: false, captcha: "CAPTCHA"}'
-sleep 60s
-curlj POST $API_HOST/v1/register/$SIGNAL_NUMBER '{use_voice: true, captcha: "CAPTCHA"}'
-curlj POST $API_HOST/v1/register/$SIGNAL_NUMBER/verify/TOKEN
-curlj PUT  $API_HOST/v1/profiles/$SIGNAL_NUMBER "{ name: 'My Bot', about: 'Beep boop 🤖. I'm automated.', base64_avatar: '$(cat inbox.png | base64 -w0 -)' }"
-curlj POST $API_HOST/v2/send "{number: '$SIGNAL_NUMBER', message: 'Hi from the API', recipients: ['YOUR_NUMBER']}"
+signal-to-inbox
 ```
 
-- [Captcha explanation](https://github.com/AsamK/signal-cli/wiki/Registration-with-captcha)
-- [curlj script](https://github.com/jneidel/dotfiles/blob/master/scripts/curlj)
+This also works as a cronjob.
+With fcron:
+```crontab
+* */2 * * * ~/code/signal-to-inbox/signal-to-inbox
+```
+<details>
+<summary>If this does not find your config</summary>
 
-### Configuration
+Try by pointing to your `$HOME`:
+```crontab
+* */2 * * * HOME=/home/jneidel ~/code/signal-to-inbox/signal-to-inbox
+```
+</details>
 
-`signal-cli-to-inbox` is configured directly in the script.
+### Message format
 
-`signal-api-to-inbox` reads a JSON config file at:
+Each separate message will be written to it's own file.
+Any sent text is accepted.
+If you want to set a file name you can use this pattern:
+```txt
+title:
+body...
+```
+The title will be the file name.
+If you use the same title repeatedly, their contents will be appended to the same file.
+Any message passed along with an image or a PDF will be used as their local file name.
+Edits are not supported and will be discarded.
 
+## Install
+For now, download the repo:
 ```sh
-$XDG_CONFIG_HOME/signal-cli-to-file/config.json
+git clone https://github.com/jneidel/signal-to-inbox.git
 ```
 
-Example `~/.config/signal-cli-to-file/config.json`:
+Will add a more convenient install option later.
 
+## Setup Signal
+
+Signal provides no official API.
+To interact with it programmatically there is [signal-cli](https://github.com/AsamK/signal-cli) and as a REST API interface around it [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api).
+This setup uses the REST API. 
+
+For us this means we need 1) a dedicated Signal phone number 2) to run the [REST API](https://github.com/bbernhard/signal-cli-rest-api#getting-started).
+
+### Run the REST API
+Use the official docker container to run the API:
+```sh
+docker run -d \
+  --name signal-api \
+  -p 8080:8080 \
+  -v /mnt/signal-api:/home/.local/share/signal-cli \
+  -e MODE=native \
+  -e SIGNAL_CLI_UID=99 \
+  --restart=always \
+  bbernhard/signal-cli-rest-api
+```
+
+### Register the signal number
+Now to register a phone number for the Signal REST API.
+I use a landline number that came with my internet contract.
+Any number not already used by a Signal account should work, so long as can receive a SMS or call.
+
+Step by step registration in your terminal:
+1. Setup env vars to avoid copy pasting:
+```sh
+export API_HOST=
+export SIGNAL_NUMBER=
+```
+`API_HOST` is `http://ip:port` and `SIGNAL_NUMBER` the number you are registering starting with `+` and country code (e.g. `+49` for DE.)
+
+2. Now [fill out the captcha](https://signalcaptchas.org/registration/generate) and copy the url of the "Open Signal" button ([more details](https://github.com/AsamK/signal-cli/wiki/Registration-with-captcha)).
+3. Execute this with the generated `CAPTCHA`:
+```sh
+curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER" -H "Content-Type: application/json" -d '{"use_voice": false, "captcha" :"CAPTCHA" }'
+```
+4. If the number can receive SMS you can skip to 7., as you will now get the token per SMS.
+5. Otherwise you will get a 400 error. (This is expected!)
+Wait one minute, generate another `CAPTCHA` and execute:
+```sh
+curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER" -H "Content-Type: application/json" -d '{"use_voice": true, "captcha" :"CAPTCHA" }'
+```
+6. You will get a call on the number, write down the token that is announced.
+7. Execute this with your `TOKEN`:
+```sh
+curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER/verify/TOKEN"
+```
+8. Test that it works by sending a message to `YOUR_NUMBER`:
+```sh
+curl -Ss -X POST "$API_HOST/v2/send" -H "Content-Type: application/json" -d "{number: '$SIGNAL_NUMBER', message: 'Hi from the API', recipients: ['YOUR_NUMBER']}"
+```
+9. Optional: give the account a name, description or profile picture.
+```sh
+curl -Ss -X PUT "$API_HOST/v1/profiles/$SIGNAL_NUMBER" -H "Content-Type: application/json" "{ name: 'My Bot', about: 'Beep boop 🤖. I'm automated.', base64_avatar: '$(cat inbox.png | base64 -w0 -)' }"
+```
+
+See the [API docs](https://bbernhard.github.io/signal-cli-rest-api) for Signal REST API.
+
+## Configuration
+
+The scripts reads a JSON config file at:
+
+```sh
+$XDG_CONFIG_HOME/signal-to-inbox/config.json
+```
+
+This is what an example `~/.config/signal-to-inbox/config.json` could look like:
 ```json
 {
   "signalNumber": "+4917222222222",
@@ -157,37 +185,3 @@ Default: `true`
 Whether to keep attachments on the server after download. `false`=delete, `true`=keep\
 Values: `false`/`true`\
 Default: `false`
-
-## Usage
-
-Process all messages:
-```sh
-signal-api-to-inbox
-```
-
-This works as a cronjob.
-With fcron I can just refer to the binary:
-```crontab
-* */2 * * * ~/code/signal-cli-to-file/signal-api-to-inbox
-```
-If this does not find your config, try with `$HOME`:
-```crontab
-* */2 * * * HOME=/home/jneidel ~/code/signal-cli-to-file/signal-api-to-inbox
-```
-
-## Tested scenarios
-### signal-api-to-inbox
-
-I jotted down these cases while building and testing the script:
-
-- Text: regular message
-- Text: multi-line
-- Text: url only
-- Text: with colon to be used as title
-- Attachment: image
-- Attachment: multiple images
-- Attachment: audio recording
-- Attachment: pdf where the original file name is used
-- Attachment: with a message to be used as the file name
-- Edit message
-- Message from number on whitelist and not on whitelist

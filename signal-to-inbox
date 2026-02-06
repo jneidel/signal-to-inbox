@@ -1,12 +1,13 @@
 #!/usr/bin/env node
+
 /* Repo: https://github.com/jneidel/signal-cli-to-file */
-const fs = require('node:fs/promises');
-const fsSync = require("node:fs");
+const fs = require("fs/promises");
+const fsSync = require("fs");
 const path = require("path");
 const { createProcessor } = require("./src/processor");
 
 const configDir = process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config");
-const configFile = path.join(configDir, "signal-cli-to-file", "config.json");
+const configFile = path.join(configDir, "signal-to-inbox", "config.json");
 let config = {};
 try {
     const rawConfig = fsSync.readFileSync(configFile, "utf8");
@@ -39,7 +40,11 @@ const filenameFromBodyCutoff = 60;
 const filenameFromTitleCutoff = 80;
 
 if (!signalNumber || !inboxDir || !apiHost) {
-    console.error("The required configuration variables are not set.")
+    if (!signalNumber) console.error("config: signalNumber is not set\n")
+    if (!inboxDir) console.error("config: inboxDir is not set\n")
+    if (!apiHost) console.error("config: apiHost is not set\n")
+    
+    console.error("The required configuration variables are not set.\n\nSee: https://github.com/jneidel/signal-to-inbox#configuration")
     process.exit(1);
 }
 fs.stat(inboxDir).catch(() => {
