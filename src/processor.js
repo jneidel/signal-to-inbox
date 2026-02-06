@@ -170,7 +170,7 @@ function createProcessor({
                 let attachments = (attachArr ? attachArr : []).map( ({id, contentType, filename}) => ({id, contentType, name: filename}) );
                 const sender = getGroupOrSenderIdentifier(m.envelope);
 
-                if (senderAndGroupWhitelist && !senderAndGroupWhitelist.includes(sender)) {
+                if (senderAndGroupWhitelist && Array.isArray(senderAndGroupWhitelist) && senderAndGroupWhitelist.length > 0 && !senderAndGroupWhitelist.includes(sender)) {
                     if (debugging) console.log( "Ignoring message from sender or group that is not whitelisted: ", sender );
                     if (attachments) attachments.forEach(a => deleteAttachment(a.id))
                     return

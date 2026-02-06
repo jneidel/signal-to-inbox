@@ -1,40 +1,39 @@
 #!/usr/bin/env node
 /* Repo: https://github.com/jneidel/signal-cli-to-file */
 const fs = require('node:fs/promises');
+const fsSync = require("node:fs");
 const path = require("path");
 const { createProcessor } = require("./src/processor");
 
-// In signal-cli registered number you want to receive messages for
-const signalNumber = "";
-// for example:
-// const signalNumber = "+4917222222222";
+const configDir = process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config");
+const configFile = path.join(configDir, "signal-cli-to-file", "config.json");
+let config = {};
+try {
+    const rawConfig = fsSync.readFileSync(configFile, "utf8");
+    config = JSON.parse(rawConfig);
+} catch (error) {
+    if (error?.code !== "ENOENT") {
+        console.error(`Failed to load config file: ${configFile}`);
+        console.error(error.message);
+        process.exit(1);
+    }
+}
 
-// The directory where messages are to be created as files
-const inboxDir = "";
-// for example:
-// const inboxDir = path.join(process.env.HOME, "org/inbox");
+const signalNumber = config.signalNumber ?? config.signal_number ?? "";
 
-// The host + port where the signal-cli-rest-api service is running
-const apiHost = "";
-// for example:
-// const apiHost = "http://192.168.178.23:8080";
+const inboxDir = config.inboxDir ?? config.inbox_dir ?? "";
 
-// Default message file extension
-const messageFileExtension = "md";
+const apiHost = config.apiHost ?? config.api_host ?? "";
 
-// Turn on to enable debugging output
-const debugging = false;
+const messageFileExtension = config.messageFileExtension ?? config.message_file_extension ?? "md";
 
-// Turn off to disable messages being backed-up in $XDG_CACHE_HOME
-const backupMessages = true;
+const debugging = config.debugging ?? false;
 
-// Turn on to not delete the attachments on the server after downloading them
-const keepAllAttachments = false;
+const backupMessages = config.backupMessages ?? config.backup_messages ?? true;
 
-// Add the numbers of senders and groups you want to receive messages from
-// If array is non-empty, all messages not from senders or groups in the list will be ignored
-// Format: [ "+49172171717", "nDfe1bpw9GDAm68w/i3VENs6JWqoTtBYm42DY5o3ShY=" ]
-const senderAndGroupWhitelist = [];
+const keepAllAttachments = config.keepAllAttachments ?? config.keep_all_attachments ?? false;
+
+const senderAndGroupWhitelist = config.senderAndGroupWhitelist ?? config.sender_and_group_whitelist ?? [];
 
 const filenameFromBodyCutoff = 60;
 const filenameFromTitleCutoff = 80;
@@ -46,10 +45,6 @@ if (!signalNumber || !inboxDir || !apiHost) {
 fs.stat(inboxDir).catch(() => {
     console.error( `Configured inboxDir '${inboxDir}' does not exist` )
     process.exit(2);
-})
-fetch(`${apiHost}/v1/health`).catch(() => {
-    console.error( `Configured apiHost '${apiHost}' is not reachable` )
-    process.exit(3);
 })
 
 const processor = createProcessor({
@@ -63,9 +58,14 @@ const processor = createProcessor({
     filenameFromBodyCutoff,
     filenameFromTitleCutoff
 });
-const { logError, processMessages } = processor;
+const { fetchApi, logError, processMessages } = processor;
 
-fetch(`${apiHost}/v1/receive/${signalNumber}?ignore_stories=true&send_read_receipts=true`)
+fetchApi(`/v1/health`).catch(() => {
+    console.error( `Configured apiHost '${apiHost}' is not reachable` )
+    process.exit(3);
+})
+
+fetchApi(`/v1/receive/${signalNumber}?ignore_stories=true&send_read_receipts=true`)
     .then( r => r.json() )
     .then( messages => {
         if (debugging) console.log( "Results from /receive:\n" + JSON.stringify(messages, null, 2) )

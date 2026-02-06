@@ -85,10 +85,77 @@ curlj POST $API_HOST/v2/send "{number: '$SIGNAL_NUMBER', message: 'Hi from the A
 - [Captcha explanation](https://github.com/AsamK/signal-cli/wiki/Registration-with-captcha)
 - [curlj script](https://github.com/jneidel/dotfiles/blob/master/scripts/curlj)
 
-### Configuring the scripts
+### Configuration
 
-The scripts themselves contain descriptions and examples for the individual
-options.
+`signal-cli-to-inbox` is configured directly in the script.
+
+`signal-api-to-inbox` reads a JSON config file at:
+
+```sh
+$XDG_CONFIG_HOME/signal-cli-to-file/config.json
+```
+
+Example `~/.config/signal-cli-to-file/config.json`:
+
+```json
+{
+  "signalNumber": "+4917222222222",
+  "inboxDir": "/home/jneidel/org/inbox",
+  "apiHost": "http://192.168.178.23:8080",
+  "messageFileExtension": "org",
+  "senderAndGroupWhitelist": [
+    "+49172171717",
+    "nDfe1bpw9GDAm68w/i3VENs6JWqoTtBYm42DY5o3ShY="
+  ],
+  "debugging": false,
+  "backupMessages": true,
+  "keepAllAttachments": false
+}
+```
+
+#### Configuration values
+**signalNumber**\
+The number of your bot to receive messages for (needs to be setup in signal-cli already.)\
+Example: `"+4917222222222"`
+
+**inboxDir**\
+The directory where messages are written as files.\
+Example: `"/home/you/org/inbox"`
+
+**apiHost**\
+host + port where signal-cli-rest-api is running.\
+Example: `"http://192.168.178.23:8080"`
+
+**messageFileExtension**\
+The file extension used for text notes. Org mode get special formatting.\
+Examples: `"md"`, `"org"`, `"txt"`\
+Default: `"md"`
+
+**senderAndGroupWhitelist** (optional)\
+If an array is supplied, only messages from senders in the list will be parsed.
+Everything else is ignored.
+Valid sender values are phone numbers and signal ids (individual or group.)\
+`null`/`[]`=no filtering, array with data=whitelist active\
+Values: `null`/`[]`/array of strings\
+Example: `["+49171717171", "nDfe1bpw9GDAm68w/i3VENs6JWqoTtBYm42DY5o3ShY=", "39dc201d-df46-4d08-b6bd-0c8aa2e40c14"]`\
+Default: disabled
+
+##### For testing
+
+**debugging** (optional)\
+Whether to print debug output.\
+Values: `false`/`true`\
+Default: `false`
+
+**backupMessages** (optional)\
+Whether to keep a copy of all processed messages in `$XDG_CACHE_HOME/signal-api-backups`.\
+Values: `true`/`false`\
+Default: `true`
+
+**keepAllAttachments** (optional)\
+Whether to keep attachments on the server after download. `false`=delete, `true`=keep\
+Values: `false`/`true`\
+Default: `false`
 
 ## Tested scenarios
 ### signal-api-to-inbox
