@@ -1,0 +1,11 @@
+{
+    "name": "signal-cli-to-file",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "test": "jest"
+    },
+    "devDependencies": {
+        "jest": "^29.7.0"
+    }
+}
