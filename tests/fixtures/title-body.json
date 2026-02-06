@@ -1,0 +1,38 @@
+[
+  {
+    "envelope": {
+      "source": "+15555550101",
+      "sourceNumber": "+15555550101",
+      "sourceUuid": "1f942227-c5f0-45f7-abc7-bcf7ab278a4d",
+      "sourceName": "Test User",
+      "sourceDevice": 6,
+      "timestamp": 1770363371358,
+      "serverReceivedTimestamp": 1770363371474,
+      "serverDeliveredTimestamp": 1770363379410,
+      "typingMessage": {
+        "action": "STARTED",
+        "timestamp": 1770363371358
+      }
+    },
+    "account": "+15555559999"
+  },
+  {
+    "envelope": {
+      "source": "+15555550101",
+      "sourceNumber": "+15555550101",
+      "sourceUuid": "1f942227-c5f0-45f7-abc7-bcf7ab278a4d",
+      "sourceName": "Test User",
+      "sourceDevice": 6,
+      "timestamp": 1770363377149,
+      "serverReceivedTimestamp": 1770363377364,
+      "serverDeliveredTimestamp": 1770363379410,
+      "dataMessage": {
+        "timestamp": 1770363377149,
+        "message": "Website yaks:\n- testing",
+        "expiresInSeconds": 1209600,
+        "viewOnce": false
+      }
+    },
+    "account": "+15555559999"
+  }
+]

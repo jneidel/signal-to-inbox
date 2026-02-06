@@ -1,0 +1,31 @@
+[
+  {
+    "envelope": {
+      "source": "+15555550101",
+      "sourceNumber": "+15555550101",
+      "sourceUuid": "1f942227-c5f0-45f7-abc7-bcf7ab278a4d",
+      "sourceName": "Test User",
+      "sourceDevice": 6,
+      "timestamp": 1770363377149,
+      "serverReceivedTimestamp": 1770363377364,
+      "serverDeliveredTimestamp": 1770363379410,
+      "dataMessage": {
+        "timestamp": 1770363377149,
+        "message": "signal-cli-api docker setup",
+        "attachments": [
+          {
+            "contentType": "image/png",
+            "filename": null,
+            "id": "YQ9Kxv5NN9gyTvZihymF.png",
+            "size": 182292,
+            "width": 1920,
+            "height": 1062,
+            "caption": null,
+            "uploadTimestamp": 1770370404384
+          }
+        ]
+      }
+    },
+    "account": "+15555559999"
+  }
+]
