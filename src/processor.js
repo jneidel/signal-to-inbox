@@ -1,4 +1,5 @@
 const fs = require('node:fs/promises');
+const { execFileSync } = require("node:child_process");
 const path = require("path");
 
 function createProcessor({
@@ -10,7 +11,8 @@ function createProcessor({
     keepAllAttachments,
     senderAndGroupWhitelist,
     filenameFromBodyCutoff,
-    filenameFromTitleCutoff
+    filenameFromTitleCutoff,
+    orgModeMetadataScript
 }) {
     const unixTime = Math.floor(Date.now()/1000);
     const errorFile = path.join(inboxDir, `signal-api-errors-${unixTime}`)
@@ -86,10 +88,16 @@ function createProcessor({
         if (msg.match(/^http/))
             return `[[${body}]]`;
 
-        const head = `#+title: ${title}\n` +
-            `#+date: [${new Date().toISOString().slice(0, 10)}]\n\n`
+        let orgMetadata;
+        try {
+            const script = orgModeMetadataScript || "generate-orgmode-metadata";
+            orgMetadata = execFileSync(script, [title], { encoding: "utf8" });
+        } catch (err) {
+            orgMetadata = `#+title: ${title}\n` +
+                `#+date: [${new Date().toISOString().slice(0, 10)}]\n`;
+        }
 
-        return head + body;
+        return orgMetadata + "\n" + body;
     }
 
     async function writeNote(msg) {

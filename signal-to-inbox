@@ -28,6 +28,8 @@ const apiHost = config.apiHost ?? config.api_host ?? "";
 
 const messageFileExtension = config.messageFileExtension ?? config.message_file_extension ?? "md";
 
+const orgModeMetadataScript = config.orgModeMetadataScript ?? config.org_mode_metadata_script ?? "generate-orgmode-metadata";
+
 const debugging = config.debugging ?? false;
 
 const backupMessages = config.backupMessages ?? config.backup_messages ?? true;
@@ -61,7 +63,8 @@ const processor = createProcessor({
     keepAllAttachments,
     senderAndGroupWhitelist,
     filenameFromBodyCutoff,
-    filenameFromTitleCutoff
+    filenameFromTitleCutoff,
+    orgModeMetadataScript
 });
 const { fetchApi, logError, processMessages } = processor;
 

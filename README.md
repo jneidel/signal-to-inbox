@@ -135,6 +135,7 @@ This is what an example `~/.config/signal-to-inbox/config.json` could look like:
     "+49172171717",
     "nDfe1bpw9GDAm68w/i3VENs6JWqoTtBYm42DY5o3ShY="
   ],
+  "orgModeMetadataScript": "generate-orgmode-metadata",
   "debugging": false,
   "backupMessages": true,
   "keepAllAttachments": false
@@ -168,6 +169,29 @@ Valid sender values are phone numbers and signal ids (individual or group.)\
 Values: `null`/`[]`/array of strings\
 Example: `["+49171717171", "nDfe1bpw9GDAm68w/i3VENs6JWqoTtBYm42DY5o3ShY=", "39dc201d-df46-4d08-b6bd-0c8aa2e40c14"]`\
 Default: disabled
+
+**orgModeMetadataScript** (optional)\
+Script to generate metadata for `.org` files (if used.)
+The script receives the title of the note as it's first argument.
+It must be in your PATH.\
+Default: `"generate-orgmode-metadata"`\
+Fallback text (if no script is available): `#+title: $title\n#+date: $(date +%Y-%m-%d)`\
+Example script:
+
+```sh
+#! /bin/sh
+
+title="$1"
+id=$(uuidgen) # org id used by org-roam
+
+cat <<EOF
+:PROPERTIES:
+:ID: $id
+:END:
+#+title: $title
+#+date: $(date +%Y-%m-%d)
+EOF
+```
 
 ##### For testing
 
