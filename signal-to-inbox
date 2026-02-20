@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
+import { createRequire } from "module";
+
 /* Repo: https://github.com/jneidel/signal-cli-to-file */
+const require = createRequire(import.meta.url);
 const fs = require("fs/promises");
 const fsSync = require("fs");
 const path = require("path");
@@ -107,3 +110,7 @@ ${messages.error}`).then(() => process.exit(1))
             console.log("No files were written.");
         }
     })
+    .catch(err => {
+        if (debugging)
+            console.error(`Error while parsing: ${err}`);
+    });
