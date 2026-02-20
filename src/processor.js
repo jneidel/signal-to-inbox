@@ -1,6 +1,6 @@
-const fs = require('node:fs/promises');
-const { execFileSync } = require("node:child_process");
-const path = require("path");
+import fs from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 
 function createProcessor({
     inboxDir,
@@ -84,7 +84,7 @@ function createProcessor({
         const title = determineUserChosenTitle(msg);
 
         if (title)
-            body = msg.slice(msg.indexOf(':') + 1).trim();
+            body = msg.slice(msg.indexOf(":") + 1).trim();
         if (msg.match(/^http/))
             return `[[${body}]]`;
 
@@ -105,7 +105,7 @@ function createProcessor({
         const fileExists = await fileExistsp(filename);
 
         if (fileExists && determineUserChosenTitle(msg))
-            msg = msg.slice(msg.indexOf(':') + 1);
+            msg = msg.slice(msg.indexOf(":") + 1);
 
         if (!fileExists && messageFileExtension === "org")
             msg = formatOrgModeMessageBody(msg);
@@ -247,6 +247,4 @@ ${JSON.stringify(m, null, 2)}` )
     };
 }
 
-module.exports = {
-    createProcessor
-};
+export { createProcessor };

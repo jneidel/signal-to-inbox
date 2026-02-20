@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 
-import { createRequire } from "module";
-
 /* Repo: https://github.com/jneidel/signal-cli-to-file */
-const require = createRequire(import.meta.url);
-const fs = require("fs/promises");
-const fsSync = require("fs");
-const path = require("path");
-const { createProcessor } = require("./src/processor");
+import fs from "node:fs/promises";
+import fsSync from "node:fs";
+import path from "node:path";
+import { createProcessor } from "./src/processor.js";
 
 const configDir = process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config");
 const configFile = path.join(configDir, "signal-to-inbox", "config.json");

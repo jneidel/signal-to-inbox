@@ -1,7 +1,9 @@
-const fs = require("node:fs/promises");
-const path = require("path");
-const os = require("os");
-const { createProcessor } = require("../src/processor");
+import fs from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import { fileURLToPath } from "node:url";
+import { jest } from "@jest/globals";
+import { createProcessor } from "../src/processor.js";
 
 const userNumber = "+15555550101";
 const botNumber = "+15555559999";
@@ -48,12 +50,12 @@ async function waitForFiles(inboxDir, expectedCount) {
 }
 
 function createFetchMock(fixtureName, attachmentBuffer) {
-    const receiveFixturePath = `./fixtures/${fixtureName}.json`
+    const receiveFixturePath = fileURLToPath(new URL(`./fixtures/${fixtureName}.json`, import.meta.url));
     
     return jest.fn(async (url, options = {}) => {
         if (String(url).includes("/receive/")) {
-            const fixture = require(receiveFixturePath);
-            return { json: async () => fixture };
+            const fixtureContents = await fs.readFile(receiveFixturePath, "utf8");
+            return { json: async () => JSON.parse(fixtureContents) };
         }
         if (String(url).includes("/attachments/")) {
             if (options.method === "DELETE") {
@@ -78,7 +80,7 @@ function createProcessMessages(inboxDir) {
 }
 
 async function fixtureToAttachment(fixtureName) {
-    const filePath = path.join(__dirname, "fixtures", fixtureName);
+    const filePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", fixtureName);
     const fileBuffer = await fs.readFile(filePath);
     return fileBuffer;
 }

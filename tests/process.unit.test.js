@@ -1,4 +1,4 @@
-const { createProcessor } = require("../src/processor");
+import { createProcessor } from "../src/processor.js";
 
 const filenameFromBodyCutoff = 60;
 const filenameFromTitleCutoff = 80;

@@ -2,10 +2,14 @@
     "name": "signal-cli-to-file",
     "version": "0.0.0",
     "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=18.19.0"
+    },
     "scripts": {
-        "test": "jest"
+        "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
     },
     "devDependencies": {
-        "jest": "^29.7.0"
+        "jest": "^30.0.0"
     }
 }
