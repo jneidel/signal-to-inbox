@@ -176,7 +176,7 @@ The script receives the title of the note as it's first argument.
 It must be in your PATH.\
 Default: `"generate-orgmode-metadata"`\
 Fallback text (if no script is available): `#+title: $title\n#+date: $(date +%Y-%m-%d)`\
-Example script:
+Simple example script:
 
 ```sh
 #! /bin/sh
@@ -192,6 +192,8 @@ cat <<EOF
 #+date: $(date +%Y-%m-%d)
 EOF
 ```
+
+You can find the [latest version of the script that I use in my dotfiles](https://github.com/jneidel/dotfiles/blob/master/scripts/org/generate-orgmode-metadata).
 
 ##### For testing
 
