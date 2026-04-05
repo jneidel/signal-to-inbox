@@ -77,6 +77,8 @@ docker run -d \
 ```
 
 ### Register the signal number
+_(See the [API docs](https://bbernhard.github.io/signal-cli-rest-api) for Signal REST API.)_
+
 Now to register a phone number for the Signal REST API.
 I use a landline number that came with my internet contract.
 Any number not already used by a Signal account should work, so long as can receive a SMS or call.
@@ -105,16 +107,16 @@ curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER" -H "Content-Type: applic
 ```sh
 curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER/verify/TOKEN"
 ```
-8. Test that it works by sending a message to `YOUR_NUMBER`:
+8. Test that it works by sending a message to `YOUR_NUMBER`.
+This also enables that your bot can receive messages from that number.
 ```sh
-curl -Ss -X POST "$API_HOST/v2/send" -H "Content-Type: application/json" -d "{number: '$SIGNAL_NUMBER', message: 'Hi from the API', recipients: ['YOUR_NUMBER']}"
+curl -Ss -X POST "$API_HOST/v2/send" -H "Content-Type: application/json" -d "{\"number\": \"$SIGNAL_NUMBER\", \"message\": \"Hi from the API\", \"recipients\": [\"YOUR_NUMBER\"]}"
 ```
-9. Optional: give the account a name, description or profile picture.
+9. Optional: give the account a name, description and profile picture.
 ```sh
-curl -Ss -X PUT "$API_HOST/v1/profiles/$SIGNAL_NUMBER" -H "Content-Type: application/json" "{ name: 'My Bot', about: 'Beep boop 🤖. I'm automated.', base64_avatar: '$(cat inbox.png | base64 -w0 -)' }"
+curl -Ss -X PUT "$API_HOST/v1/profiles/$SIGNAL_NUMBER" -H "Content-Type: application/json" -d "{ \"name\": \"My Bot\", \"about\": \"Beep boop 🤖. I'm automated.\", \"base64_avatar\": \"$(cat inbox.png | base64 -w0 -)\" }"
 ```
-
-See the [API docs](https://bbernhard.github.io/signal-cli-rest-api) for Signal REST API.
+Attribution for the [inbox.png](inbox.png) icon included with this repo: [Flaticon](https://www.flaticon.com/free-icons/inbox)
 
 ## Configuration
 
