@@ -37,14 +37,14 @@ Try by pointing to your `$HOME`:
 
 Each separate message will be written to it's own file.
 Any sent text is accepted.
-If you want to set a file name you can use this pattern:
+If you want to explicitly set a file name for a text message you can use this pattern:
 ```txt
 title:
 body...
 ```
 The title will be the file name.
-If you use the same title repeatedly, their contents will be appended to the same file.
-Any message passed along with an image or a PDF will be used as their local file name.
+If the same title is used repeatedly, their contents will be appended to the same file in order.
+Any message passed along with an image or a PDF will become their file name.
 Edits are not supported and will be discarded.
 
 ## Install
@@ -61,10 +61,14 @@ Signal provides no official API.
 To interact with it programmatically there is [signal-cli](https://github.com/AsamK/signal-cli) and as a REST API interface around it [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api).
 This setup uses the REST API. 
 
-For us this means we need 1) a dedicated Signal phone number 2) to run the [REST API](https://github.com/bbernhard/signal-cli-rest-api#getting-started).
+### Requirements
+
+You will need:
+1. An unregistered Signal phone number (can be a landline, needs to be able to receive texts or calls.)
+2. A running installation of the [REST API](https://github.com/bbernhard/signal-cli-rest-api#getting-started)
 
 ### Run the REST API
-Use the official docker container to run the API:
+Use the official docker container to run the [API](https://github.com/bbernhard/signal-cli-rest-api#getting-started) (or use the equivalent Unraid app):
 ```sh
 docker run -d \
   --name signal-api \
@@ -77,13 +81,11 @@ docker run -d \
 ```
 
 ### Register the signal number
-_(See the [API docs](https://bbernhard.github.io/signal-cli-rest-api) for Signal REST API.)_
+_(See the [API reference](https://bbernhard.github.io/signal-cli-rest-api) of the Signal REST API.)_
 
 Now to register a phone number for the Signal REST API.
-I use a landline number that came with my internet contract.
-Any number not already used by a Signal account should work, so long as can receive a SMS or call.
 
-Step by step registration in your terminal:
+Here is the validated step by step registration flow for the terminal:
 1. Setup env vars to avoid copy pasting:
 ```sh
 export API_HOST=
@@ -92,27 +94,27 @@ export SIGNAL_NUMBER=
 `API_HOST` is `http://ip:port` and `SIGNAL_NUMBER` the number you are registering starting with `+` and country code (e.g. `+49` for DE.)
 
 2. Now [fill out the captcha](https://signalcaptchas.org/registration/generate) and copy the url of the "Open Signal" button ([more details](https://github.com/AsamK/signal-cli/wiki/Registration-with-captcha)).
-3. Execute this with the generated `CAPTCHA`:
+3. Request a registration and pass the generated `CAPTCHA` in the body:
 ```sh
 curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER" -H "Content-Type: application/json" -d '{"use_voice": false, "captcha" :"CAPTCHA" }'
 ```
 4. If the number can receive SMS you can skip to 7., as you will now get the token per SMS.
 5. Otherwise you will get a 400 error. (This is expected!)
-Wait one minute, generate another `CAPTCHA` and execute:
+Wait >=60 seconds, generate another `CAPTCHA` and re-register with voice confirmation:
 ```sh
 curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER" -H "Content-Type: application/json" -d '{"use_voice": true, "captcha" :"CAPTCHA" }'
 ```
-6. You will get a call on the number, write down the token that is announced.
-7. Execute this with your `TOKEN`:
+6. You will get a call. Be sure to write down the token you're told.
+7. Verify with your `TOKEN`:
 ```sh
 curl -Ss -X POST "$API_HOST/v1/register/$SIGNAL_NUMBER/verify/TOKEN"
 ```
-8. Test that it works by sending a message to `YOUR_NUMBER`.
-This also enables that your bot can receive messages from that number.
+8. Test that registration was successful by sending a message to `YOUR_PERSONAL_NUMBER`.
+After you accept the message request you can now also message back.
 ```sh
-curl -Ss -X POST "$API_HOST/v2/send" -H "Content-Type: application/json" -d "{\"number\": \"$SIGNAL_NUMBER\", \"message\": \"Hi from the API\", \"recipients\": [\"YOUR_NUMBER\"]}"
+curl -Ss -X POST "$API_HOST/v2/send" -H "Content-Type: application/json" -d "{\"number\": \"$SIGNAL_NUMBER\", \"message\": \"Hi from the API\", \"recipients\": [\"YOUR_PERSONAL_NUMBER\"]}"
 ```
-9. Optional: give the account a name, description and profile picture.
+9. Optional: give the account a Signal name, description and profile picture.
 ```sh
 curl -Ss -X PUT "$API_HOST/v1/profiles/$SIGNAL_NUMBER" -H "Content-Type: application/json" -d "{ \"name\": \"My Bot\", \"about\": \"Beep boop 🤖. I'm automated.\", \"base64_avatar\": \"$(cat inbox.png | base64 -w0 -)\" }"
 ```
