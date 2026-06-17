@@ -93,6 +93,7 @@ function createProcessor({
             const script = orgModeMetadataScript || "generate-orgmode-metadata";
             orgMetadata = execFileSync(script, [title], { encoding: "utf8" });
         } catch (err) {
+            logError(`Error while running orgModeMetadataScript: ${err}\nUsing fallback (title and date) instead.`);
             orgMetadata = `#+title: ${title}\n` +
                 `#+date: [${new Date().toISOString().slice(0, 10)}]\n`;
         }
