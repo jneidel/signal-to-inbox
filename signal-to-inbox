@@ -66,7 +66,7 @@ const processor = createProcessor({
     filenameFromTitleCutoff,
     orgModeMetadataScript
 });
-const { fetchApi, logError, processMessages } = processor;
+const { fetchApi, logErrorToFile, processMessages } = processor;
 
 fetchApi(`/v1/health`).catch(() => {
     console.error( `Configured apiHost '${apiHost}' is not reachable` )
@@ -79,7 +79,7 @@ fetchApi(`/v1/receive/${signalNumber}?ignore_stories=true&send_read_receipts=tru
         if (debugging) console.log( "Results from /receive:\n" + JSON.stringify(messages, null, 2) )
 
         if ( messages?.error )
-            logError(`Error on /receive:
+            logErrorToFile(`Error on /receive:
 ${messages.error}`).then(() => process.exit(1))
 
         return processMessages(messages);

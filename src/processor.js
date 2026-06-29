@@ -26,8 +26,9 @@ function createProcessor({
         appendedFiles: new Set(),
     }
 
-    function logError(msg) {
-        return fs.appendFile(errorFile, String(msg)+"\n\n");
+    function logErrorToFile(msg) {
+        if (debugging)
+            return fs.appendFile(errorFile, String(msg)+"\n\n");
     }
 
     async function fileExistsp(filename) {
@@ -39,14 +40,14 @@ function createProcessor({
     async function writeToFile(filename, data) {
         if (debugging) console.log("Writing to: " + filename);
         return fs.appendFile(path.join(inboxDir, filename), data)
-            .catch(err => logError( `Writing file: ${filename}
-        With message: ${data}
+            .catch(err => logErrorToFile( `Writing file: ${filename}
+            With message: ${data}
 ` + err ));
     }
 
     async function fetchApi(endpoint, options = {}) {
         return fetch( `${apiHost}${endpoint}`, options )
-            .catch(err => logError( `fetching ${endpoint}
+            .catch(err => logErrorToFile( `fetching ${endpoint}
 ` + err))
     }
 
@@ -93,7 +94,7 @@ function createProcessor({
             const script = orgModeMetadataScript || "generate-orgmode-metadata";
             orgMetadata = execFileSync(script, [title], { encoding: "utf8" });
         } catch (err) {
-            logError(`Error while running orgModeMetadataScript: ${err}\nUsing fallback (title and date) instead.`);
+            logErrorToFile(`Error while running orgModeMetadataScript: ${err}\nUsing fallback (title and date) instead.`);
             orgMetadata = `#+title: ${title}\n` +
                 `#+date: [${new Date().toISOString().slice(0, 10)}]\n`;
         }
@@ -126,7 +127,7 @@ function createProcessor({
         case "application/octet-stream":
             return ".bin";
         default:
-            logError( `FileExt is empty and contentType of ${contentType} is not being matched for attachement ${id}` );
+            logErrorToFile( `FileExt is empty and contentType of ${contentType} is not being matched for attachement ${id}` );
             return ".bin";
         }
     }
@@ -204,7 +205,7 @@ function createProcessor({
                 }
 
                 if (!message && !attachments.length && debugging ) {
-                    logError( `Message and attachements are empty for:
+                    logErrorToFile( `Message and attachements are empty for:
 ${JSON.stringify(m, null, 2)}` )
                     return null;
                 }
@@ -225,10 +226,10 @@ ${JSON.stringify(m, null, 2)}` )
         summary.createdFiles = Array.from(summary.createdFiles).sort();
         summary.appendedFiles = Array.from(summary.appendedFiles).sort();
         return summary;
-        }
+    }
 
     return {
-        logError,
+        logErrorToFile,
         fileExistsp,
         writeToFile,
         fetchApi,
