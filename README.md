@@ -51,6 +51,8 @@ Edits are not supported and will be discarded.
 For now, download the repo:
 ```sh
 git clone https://github.com/jneidel/signal-to-inbox.git
+cd signal-to-inbox
+npm link
 ```
 
 Will add a more convenient install option later.
@@ -215,3 +217,45 @@ Default: `true`
 Whether to keep attachments on the server after download. `false`=delete, `true`=keep\
 Values: `false`/`true`\
 Default: `false`
+
+## Systemd Timer (cron)
+
+For calling the script on a schedule I prefer systemd timers over cron.
+Here is my setup
+
+```systemd
+# ~/.config/systemd/user/signal-to-inbox.service
+[Unit]
+Description=Fetch signal messages and save them to inbox.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/jneidel/.local/bin/signal-to-inbox
+Nice=18
+```
+
+Test: `systemctl --user start signal-to-inbox; systemctl --user status signal-to-inbox`
+
+```systemd
+# ~/.config/systemd/user/signal-to-inbox.timer
+[Unit]
+Description=Hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedOffsetSec=500
+
+[Install]
+WantedBy=timers.target
+```
+
+Activate and test:
+```sh
+systemctl --user enable signal-to-inbox.timer
+systemctl --user start signal-to-inbox.timer
+systemctl --user status signal-to-inbox.timer
+systemctl --user list-timers
+```
