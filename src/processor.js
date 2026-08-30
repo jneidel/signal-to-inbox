@@ -60,7 +60,6 @@ function createProcessor({
                 .slice(0, filenameFromTitleCutoff);
         } else {
             return "";
-
         }
     }
     function determineFilename(msgNonPathSafe) {
@@ -74,7 +73,7 @@ function createProcessor({
             if (msgContentsOneline.length <= filenameFromBodyCutoff)
                 return `${msgContentsOneline}.${messageFileExtension}`;
             else {
-                const cutoffMsgContents = msg.slice(0, filenameFromBodyCutoff) + "…";
+                const cutoffMsgContents = msgContentsOneline.slice(0, filenameFromBodyCutoff) + "…";
                 return `${cutoffMsgContents}.${messageFileExtension}`;
             }
         }
